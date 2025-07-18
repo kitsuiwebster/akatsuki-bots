@@ -24,6 +24,7 @@ redis_client = redis.Redis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379,
 GUILD_ID = int(os.getenv('GUILD_ID'))
 ALONE_THRESHOLD = 300  # 5 minutes in seconds
 AKATSUKI_SPAWN_CHANCE = 0.1  # 10% chance
+NOTIFICATION_CHANNEL_ID = 1395763162422186105  # Channel to send notifications
 
 voice_timers = {}
 
@@ -138,6 +139,22 @@ async def trigger_akatsuki(channel_id, user_id):
                 }
                 
                 redis_client.publish('akatsuki-summon', json.dumps(message))
+                
+                # Send notification to the specified channel
+                notification_channel = bot.get_channel(NOTIFICATION_CHANNEL_ID)
+                if notification_channel:
+                    user_name = non_bot_members[0].name
+                    voice_channel_name = channel.name
+                    embed = discord.Embed(
+                        title="🌙 Akatsuki Summoned",
+                        description=f"**{user_name}** has been alone for 5 minutes in **{voice_channel_name}**\n\n*The Akatsuki has been summoned...*",
+                        color=0x8B0000,  # Dark red
+                        timestamp=datetime.now()
+                    )
+                    embed.set_footer(text="Random encounter • 10% chance")
+                    await notification_channel.send(embed=embed)
+                else:
+                    print(f"⚠️  Could not find notification channel {NOTIFICATION_CHANNEL_ID}")
             else:
                 print(f"🎲 Dice roll FAILED. No Akatsuki this time (need {AKATSUKI_SPAWN_CHANCE*100}% chance)")
         else:
