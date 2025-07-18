@@ -1,0 +1,4 @@
+discord.py[voice] @ git+https://github.com/rapptz/discord.py
+PyNaCl==1.5.0
+redis==5.0.1
+python-dotenv==1.0.0

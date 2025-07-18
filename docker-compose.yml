@@ -1,0 +1,196 @@
+services:
+  # Bot coordinateur
+  coordinator:
+    build:
+      context: ./coordinator
+      dockerfile: Dockerfile
+    container_name: akatsuki-coordinator
+    environment:
+      - BOT_TOKEN=${COORDINATOR_BOT_TOKEN}
+      - GUILD_ID=${GUILD_ID}
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  # Bots Akatsuki
+  pain:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-pain
+    environment:
+      - BOT_TOKEN=${PAIN_BOT_TOKEN}
+      - BOT_NAME=Pain
+      - IS_LEADER=true
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  konan:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-konan
+    environment:
+      - BOT_TOKEN=${KONAN_BOT_TOKEN}
+      - BOT_NAME=Konan
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  itachi:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-itachi
+    environment:
+      - BOT_TOKEN=${ITACHI_BOT_TOKEN}
+      - BOT_NAME=Itachi
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  kisame:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-kisame
+    environment:
+      - BOT_TOKEN=${KISAME_BOT_TOKEN}
+      - BOT_NAME=Kisame
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  deidara:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-deidara
+    environment:
+      - BOT_TOKEN=${DEIDARA_BOT_TOKEN}
+      - BOT_NAME=Deidara
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  sasori:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-sasori
+    environment:
+      - BOT_TOKEN=${SASORI_BOT_TOKEN}
+      - BOT_NAME=Sasori
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  hidan:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-hidan
+    environment:
+      - BOT_TOKEN=${HIDAN_BOT_TOKEN}
+      - BOT_NAME=Hidan
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  kakuzu:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-kakuzu
+    environment:
+      - BOT_TOKEN=${KAKUZU_BOT_TOKEN}
+      - BOT_NAME=Kakuzu
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  tobi:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-tobi
+    environment:
+      - BOT_TOKEN=${TOBI_BOT_TOKEN}
+      - BOT_NAME=Tobi
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  zetsu:
+    build:
+      context: ./bots
+      dockerfile: Dockerfile
+    container_name: akatsuki-zetsu
+    environment:
+      - BOT_TOKEN=${ZETSU_BOT_TOKEN}
+      - BOT_NAME=Zetsu
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  # Redis pour la communication entre bots
+  redis:
+    image: redis:7-alpine
+    container_name: akatsuki-redis
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+  # Portainer
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: akatsuki-portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - akatsuki-network
+    restart: unless-stopped
+
+networks:
+  akatsuki-network:
+    driver: bridge
+
+volumes:
+  portainer_data:
