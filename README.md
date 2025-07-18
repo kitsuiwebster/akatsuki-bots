@@ -78,9 +78,13 @@ When a user stays alone for 5 minutes in a voice channel, there's a 10% chance t
 4. Stay alone for 5 minutes
 5. 🎲 10% chance the Akatsuki appears!
 
+## Commands
+
+- **!aka** - Manually summon the Akatsuki to your current voice channel (bypass the 5-minute timer and 10% chance)
+
 ## Management
 
-Access Portainer: http://localhost:9000
+Access Portainer: http://localhost:8999
 
 ## Project Structure
 

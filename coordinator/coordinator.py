@@ -39,6 +39,28 @@ async def on_ready():
         print(f'ERROR: Could not find guild with ID {GUILD_ID}')
         print(f'Available guilds: {[g.name for g in bot.guilds]}')
 
+@bot.command(name='aka')
+async def manual_summon(ctx):
+    """Manually summon the Akatsuki to the user's voice channel"""
+    if not ctx.author.voice:
+        await ctx.send("❌ You must be in a voice channel to summon the Akatsuki!")
+        return
+    
+    voice_channel = ctx.author.voice.channel
+    
+    # Send signal to all Akatsuki bots via Redis
+    message = {
+        'action': 'summon',
+        'channel_id': voice_channel.id,
+        'user_id': ctx.author.id,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    redis_client.publish('akatsuki-summon', json.dumps(message))
+    
+    await ctx.send(f"🌙 **The Akatsuki has been summoned to {voice_channel.name}!**")
+    print(f"Manual summon by {ctx.author.name} in {voice_channel.name}")
+
 @bot.event
 async def on_voice_state_update(member, before, after):
     print(f'Voice state update: {member.name} in guild {member.guild.name}')
