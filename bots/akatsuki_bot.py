@@ -3,10 +3,33 @@ from discord.ext import commands
 import redis
 import json
 import asyncio
+import logging
 import os
 import random
 import shutil
 from datetime import datetime
+
+
+class _VoiceRetryFilter(logging.Filter):
+    """Drop the noisy 4017/handshake retry traces from discord.voice_state.
+
+    discord.py retries automatically and almost always recovers; the ERROR-level
+    tracebacks for "Failed to connect to voice... Retrying" are misleading log
+    spam under a thundering-herd voice connect (10 bots → 1 channel).
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if 'Failed to connect to voice' in msg and 'Retrying' in msg:
+            return False
+        if 'voice handshake is being terminated' in msg:
+            return False
+        if 'Starting voice handshake' in msg or 'Voice handshake complete' in msg:
+            return False
+        return True
+
+
+logging.getLogger('discord.voice_state').addFilter(_VoiceRetryFilter())
 
 intents = discord.Intents.default()
 intents.voice_states = True
@@ -57,6 +80,40 @@ async def listen_for_summons():
         except Exception as e:
             print(f"Error in listen_for_summons: {e}")
             await asyncio.sleep(1)
+
+async def wait_for_stable_voice(vc, channel, stabilize_secs=8, reconnect_attempts=2):
+    """Wait for the voice client to be stably connected.
+
+    discord.py's voice state machine occasionally closes the WS with code 1000
+    immediately after a successful handshake (especially after a 4017 retry
+    storm). The vc reference can briefly report not-connected while the inner
+    reconnect is in flight. Poll for is_connected(), and if it never recovers,
+    force a clean reconnect once before giving up.
+    """
+    for _ in range(stabilize_secs):
+        if vc and vc.is_connected():
+            return vc
+        await asyncio.sleep(1.0)
+
+    for attempt in range(1, reconnect_attempts + 1):
+        print(f"{BOT_NAME} voice client did not stabilize, reconnect attempt {attempt}/{reconnect_attempts}")
+        try:
+            if vc:
+                await vc.disconnect(force=True)
+        except Exception:
+            pass
+        try:
+            vc = await channel.connect(timeout=30.0, reconnect=True)
+        except Exception as e:
+            print(f"{BOT_NAME} reconnect attempt {attempt} failed: {e}")
+            continue
+        for _ in range(stabilize_secs):
+            if vc.is_connected():
+                return vc
+            await asyncio.sleep(1.0)
+
+    return vc
+
 
 async def handle_summon(channel_id, user_id=None):
     channel = bot.get_channel(int(channel_id))
@@ -109,14 +166,10 @@ async def handle_summon(channel_id, user_id=None):
                     print(f"{BOT_NAME} giving up after {max_retries} attempts")
                     return
         
-        # Wait a bit to ensure connection is stable
-        await asyncio.sleep(1.0)
-        
         # If this is Pain (leader), play the theme
         if IS_LEADER:
-            # Wait just a bit for connection to stabilize, then play immediately
-            await asyncio.sleep(3.0)
-            
+            vc = await wait_for_stable_voice(vc, channel)
+
             if vc and vc.is_connected():
                 print(f"{BOT_NAME} is ready to play the Akatsuki theme!")
                 
@@ -168,7 +221,8 @@ async def handle_summon(channel_id, user_id=None):
                 print(f"{BOT_NAME} connection lost, cannot play theme")
         
         else:
-            # Non-leader bots: assign the voice client to global variable
+            # Non-leader bots: stabilize then assign the voice client to global variable
+            vc = await wait_for_stable_voice(vc, channel)
             global voice_client_global
             voice_client_global = vc
             print(f"{BOT_NAME} assigned voice client for leave signal")
